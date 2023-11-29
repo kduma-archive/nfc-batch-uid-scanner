@@ -57,6 +57,7 @@
     
       try {
         const ndef = new NDEFReader();
+        const decoder = new TextDecoder();
         await ndef.scan();
         Logger.write("> Scan started");
         scanButton.disabled = true;
@@ -71,10 +72,14 @@
           Logger.write(`> Records: (${message.records.length})`);
 
           for (const record of message.records) {
-            Logger.write(`> Record Type: ${record.recordType}`);
-            Logger.write(`> MIME Type: ${record.mediaType}`);
-            Logger.write(`> Record ID: ${record.id}`);
-            Logger.write(`> Data: ${record.data}`);
+            Logger.write(`>> Record Type: ${record.type}`);
+            Logger.write(`>> MIME Type: ${record.mimeType}`);
+            Logger.write(`>> Record ID: ${record.id}`);
+            try {
+              Logger.write(`>> Data: ${decoder.decode(record.data)}`);
+            } catch (error) {
+              Logger.write(`>> Data: ${record.data}`);
+            }
           }
 
           if (tags.includes(serialNumber)) {
