@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="nfc-batch-uid-scanner">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>nfc-batch-uid-scanner</title>
+</head>
+
+<body>
+  <button id="scanButton">Scan</button>
+  <button id="saveButton" disabled>Copy to Clipboard / Save</button>
+
+  <h4>Log</h4>
+  <pre id="output"></pre>
+
+  <h4>Captured Data</h4>
+  <pre id="data"></pre>
+  
+  <script>
+    var Logger = {
+      write: function() {
+        var line = Array.prototype.slice.call(arguments).map(function(argument) {
+          return typeof argument === 'string' ? argument : JSON.stringify(argument);
+        }).join(' ');
+    
+        document.querySelector('#output').textContent += line + '\n';
+      },
+      
+      writeData: function() {
+        var line = Array.prototype.slice.call(arguments).map(function(argument) {
+          return typeof argument === 'string' ? argument : JSON.stringify(argument);
+        }).join(' ');
+    
+        document.querySelector('#data').textContent += line + '\n';
+      },
+    
+      clear: function() {
+        document.querySelector('#output').textContent = '';
+      },
+    };
+    
+    
+    if (!("NDEFReader" in window)){
+      Logger.write("Web NFC is not available. Use Chrome on Android.");
+    }
+    
+    scanButton.addEventListener("click", async () => {
+      Logger.write("User clicked scan button");
+          saveButton.disabled = false;
+    
+      try {
+        const ndef = new NDEFReader();
+        await ndef.scan();
+        Logger.write("> Scan started");
+        scanButton.disabled = true;
+    
+        ndef.addEventListener("readingerror", () => {
+          Logger.write("Argh! Cannot read data from the NFC tag. Try another one?");
+        });
+    
+        ndef.addEventListener("reading", ({ message, serialNumber }) => {
+          Logger.writeData(serialNumber);
+          saveButton.disabled = false;
+          Logger.write(`> Serial Number: ${serialNumber}`);
+          Logger.write(`> Records: (${message.records.length})`);
+        });
+      } catch (error) {
+        Logger.write("> ERROR: " + error);
+      }
+    });
+    
+    saveButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(document.querySelector('#data').textContent);
+        Logger.write("Copied to clipboard successfully");
+      } catch (err) {
+        Logger.write(`Error: ${err}`);
+      }
+      
+      try {
+        await navigator.share({
+          text: document.querySelector('#data').textContent
+        });
+        Logger.write("Shared Successfully");
+      } catch (err) {
+        /* Logger.write(`Error: ${err}`); */
+      }
+    });
+  </script>
+</body>
+</html>
