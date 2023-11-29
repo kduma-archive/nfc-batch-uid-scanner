@@ -11,12 +11,12 @@
 
 <body>
   <button id="scanButton">Scan</button>
-  <button id="saveButton" disabled>Copy to Clipboard / Save</button>
+  <button id="saveButton" disabled>Copy to Clipboard / Save <span id="counter2">0</span></button>
 
   <h4>Log</h4>
   <pre id="output"></pre>
 
-  <h4>Captured Data</h4>
+  <h4>Captured Data (<span id="counter1">0</span>)</h4>
   <pre id="data"></pre>
   
   <script>
@@ -46,6 +46,10 @@
     if (!("NDEFReader" in window)){
       Logger.write("Web NFC is not available. Use Chrome on Android.");
     }
+
+
+    let counter = 0;
+    let tags = [];
     
     scanButton.addEventListener("click", async () => {
       Logger.write("User clicked scan button");
@@ -62,15 +66,33 @@
         });
     
         ndef.addEventListener("reading", ({ message, serialNumber }) => {
-          Logger.writeData(serialNumber);
           saveButton.disabled = false;
           Logger.write(`> Serial Number: ${serialNumber}`);
           Logger.write(`> Records: (${message.records.length})`);
+
+          for (const record of message.records) {
+            Logger.write(`> Record Type: ${record.recordType}`);
+            Logger.write(`> MIME Type: ${record.mediaType}`);
+            Logger.write(`> Record ID: ${record.id}`);
+            Logger.write(`> Data: ${record.data}`);
+          }
+
+          if (tags.includes(serialNumber)) {
+            Logger.write(`> Duplicate Tag`);
+          } else {
+            tags.push(serialNumber);
+            Logger.writeData(serialNumber);
+            counter++;
+            Logger.write(`> Tag Count: ${counter}`);
+            document.querySelector('#counter1').textContent = `${counter}`;
+            document.querySelector('#counter2').textContent = `${counter}`;
+          }
         });
       } catch (error) {
         Logger.write("> ERROR: " + error);
       }
     });
+
     
     saveButton.addEventListener("click", async () => {
       try {
